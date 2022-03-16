@@ -1,0 +1,30 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.fabricspbm.category.Fabric SPBm": {
+    "message": "Fabric SPBm",
+    "description": "The label for category Fabric SPBm in sidebar fabricspbm"
+  },
+  "sidebar.fabricspbm.category.Getting started": {
+    "message": "Getting started",
+    "description": "The label for category Getting started in sidebar fabricspbm"
+  },
+  "sidebar.fabricspbm.category.Fabric deployment": {
+    "message": "Fabric deployment",
+    "description": "The label for category Fabric deployment in sidebar fabricspbm"
+  },
+  "sidebar.fabricspbm.category.Services": {
+    "message": "Services",
+    "description": "The label for category Services in sidebar fabricspbm"
+  },
+  "sidebar.fabricspbm.category.Advanced configurations": {
+    "message": "Advanced configurations",
+    "description": "The label for category Advanced configurations in sidebar fabricspbm"
+  },
+  "sidebar.fabricspbm.category.Security protocols": {
+    "message": "Security protocols",
+    "description": "The label for category Security protocols in sidebar fabricspbm"
+  }
+}
