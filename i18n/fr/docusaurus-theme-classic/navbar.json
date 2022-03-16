@@ -1,0 +1,18 @@
+{
+  "title": {
+    "message": "How to Extreme Networks",
+    "description": "The title in the navbar"
+  },
+  "item.label.Fabric SPBm": {
+    "message": "Fabric SPBm",
+    "description": "Navbar item with label Fabric SPBm"
+  },
+  "item.label.XIQ-SE": {
+    "message": "XIQ-SE",
+    "description": "Navbar item with label XIQ-SE"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

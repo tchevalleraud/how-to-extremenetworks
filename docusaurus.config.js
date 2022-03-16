@@ -10,7 +10,7 @@ const config = {
   tagline: 'All technologies',
   url: 'https://tchevalleraud.github.io',
   baseUrl: '/how-to-extremenetworks/',
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/extremenetworks.ico',
   organizationName: 'tchevalleraud', // Usually your GitHub org/user name.
