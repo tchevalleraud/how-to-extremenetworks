@@ -94,7 +94,7 @@ export default function ConfigGenerator() {
         var i = parseInt(event.target.dataset.interface);
         const newInterface = [...interfaces];
         newInterface[i] = interfaces[i];
-        newInterface[i].name = parseInt(event.target.value);
+        newInterface[i].name = event.target.value;
         setInterfaces(newInterface);
     }
 
