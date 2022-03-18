@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import clsx from 'clsx';
 import styles from './styles.module.css';
 import CodeBlock from '@theme/CodeBlock';
@@ -18,90 +18,85 @@ var node_spbm_primary_name      = "BVLAN-4051";
 var node_spbm_secondary         = 4052;
 var node_spbm_secondary_name    = "BVLAN-4052";
 
-function onChange_NodeType(event){
-    node_type = event.target.value;
-}
+export default function ConfigGenerator() {
+    const [nodeType, setNodeType] = useState(node_type);
+    const [nodeVersion, setNodeVersion] = useState(node_version);
+    const [nodeName, setNodeName] = useState(node_name);
 
-function onChange_NodeVersion(event){
-    node_version = event.target.value;
-}
+    const [nodeInterface, setNodeInterface] = useState(0);
+    const [interfaces, setInterfaces] = useState([]);
 
-function onChange_NodeName(event){
-    node_version = event.target.value;
-}
-
-function onChange_NodeRole(event){
-    node_role = event.target.value;
-}
-
-function onChange_NodeSite(event){
-    node_site = event.target.value;
-}
-
-function onChange_NodeId(event){
-    node_id = event.target.value;
-}
-
-function onChange_NodeArea(event){
-    node_area = event.target.value;
-}
-
-function onChange_NodeSPBm(event){
-    node_spbm = event.target.value;
-}
-
-function onChange_NodeSPBmPrimary(event){
-    node_spbm_primary = event.target.value;
-}
-
-function onChange_NodeSPBmPrimary_Name(event){
-    node_spbm_primary_name = event.target.value;
-}
-
-function onChange_NodeSPBmSecondary(event){
-    node_spbm_secondary = event.target.value;
-}
-
-function onChange_NodeSPBmSecondary_Name(event){
-    node_spbm_secondary_name = event.target.value;
-}
-
-function nodeChange(event){
-    //node_id = event.target.value;
-}
-
-function updateConfig(){
-    var inner = "" +
-        "# Node type    : "+ node_type +"<br/>" +
-        "# Node version : "+ node_version +"<br/>" +
-        "<br/>" +
-        "enable<br/>" +
-        "config terminal<br/>" +
-        "<br/>" +
-        "sys name "+ node_name +"<br/>" +
-        "<br/>" +
-        "spbm <br/>" +
-        "router isis<br/>" +
-        "system-id 020"+ node_role +".0"+ node_site +"0.00"+ node_id +"<br/>" +
-        "manual-area "+ node_area +"<br/>" +
-        "spbm "+ node_spbm +"<br/>" +
-        "spbm "+ node_spbm +" nick-name "+ node_role +"."+ node_site +"."+ node_id +"<br/>" +
-        "spbm "+ node_spbm +" b-vid "+ node_spbm_primary +","+ node_spbm_secondary +" primary "+ node_spbm_primary +"<br/>" +
-        "exit<br/>" +
-        "vlan create "+ node_spbm_primary +" name "+ node_spbm_primary_name +" type spbm-bvlan<br/>" +
-        "vlan create "+ node_spbm_secondary +" name "+ node_spbm_secondary_name +" type spbm-bvlan<br/>" +
-        "router isis enable<br/>";
-
-    if(node_version < "8.2") {
-    } else if(node_version >= "8.2"){
-    } else {
-        var inner = "Configuration error";
+    function range(start, end){
+        return Array(end - start + 1).fill().map((_, idx) => start + idx)
     }
 
-    document.getElementsByClassName("token")[0].innerHTML = inner;
-}
+    function onChange_NodeType(event){
+        setNodeType(event.target.value)
+    }
 
-export default function ConfigGenerator() {
+    function onChange_NodeVersion(event){
+        setNodeVersion(event.target.value)
+    }
+
+    function onChange_NodeName(event){
+        setNodeName(event.target.value)
+    }
+
+    function getInterfaceConfig(){
+        var data = "";
+        interfaces.map((i) => {
+            data = data + "interface gigabitEthernet "+i.slot+"/"+ i.port +"\n";
+            if(i.name != "") data = data + "name \""+ i.name +"\"\n";
+            data = data + "isis\n";
+            data = data + "isis spbm 1\n";
+            data = data + "isis enable\n";
+            data = data + "no spanning-tree mstp force-port-state enable\n";
+            data = data + "y\n";
+            data = data + "no shutdown\n";
+            data = data + "exit\n";
+            data = data + "\n";
+        })
+        return data;
+    }
+
+    function onClick_AddInterface(event){
+        setInterfaces([...interfaces, {
+            id: nodeInterface,
+            slot: 1,
+            port: 1,
+            name: ""
+        }])
+        setNodeInterface(nodeInterface + 1)
+    }
+
+    function onClick_DeleteInterface(event){
+        var i = parseInt(event.target.dataset.interface);
+        setInterfaces(interfaces.filter((e) => (e.id != i)));
+    }
+
+    function onChange_InterfaceSlot(event){
+        var i = parseInt(event.target.dataset.interface);
+        const newInterface = [...interfaces];
+        newInterface[i] = interfaces[i];
+        newInterface[i].slot = parseInt(event.target.value);
+        setInterfaces(newInterface);
+    }
+
+    function onChange_InterfacePort(event){
+        var i = parseInt(event.target.dataset.interface);
+        const newInterface = [...interfaces];
+        newInterface[i] = interfaces[i];
+        newInterface[i].port = parseInt(event.target.value);
+        setInterfaces(newInterface);
+    }
+
+    function onChange_InterfaceName(event){
+        var i = parseInt(event.target.dataset.interface);
+        const newInterface = [...interfaces];
+        newInterface[i] = interfaces[i];
+        newInterface[i].name = parseInt(event.target.value);
+        setInterfaces(newInterface);
+    }
 
     return (
         <div>
@@ -115,15 +110,14 @@ export default function ConfigGenerator() {
                 <select onChange={onChange_NodeType} className={clsx(styles.input, 'margin-right--sm')}>
                     <option value="physical">Physical</option>
                     <option value="virtual">Virtual</option>
-                </select>
-
+                </select>{' '}
                 <label>
                     <strong className="margin-right--sm">
                         Node version :
                     </strong>
                 </label>
                 <select onChange={onChange_NodeVersion} className={clsx(styles.input, 'margin-right--sm')}>
-                    <option value="8.5" selected>8.5.0.0</option>
+                    <option value="8.5">8.5.0.0</option>
                     <option value="8.4">8.4.3.0</option>
                     <option value="8.4">8.4.2.1</option>
                     <option value="8.4">8.4.1.1</option>
@@ -154,92 +148,79 @@ export default function ConfigGenerator() {
                     <option value="8.0">8.0.5.0</option>
                     <option value="8.0">8.0.1.0</option>
                     <option value="8.0">8.0.0.0</option>
-                </select>
-
+                </select>{' '}
                 <label>
                     <strong className="margin-right--sm">
                         Node name :
                     </strong>
                 </label>
-                <input type="text" onChange={onChange_NodeName} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_name }/>
+                <input type="text" onChange={onChange_NodeName} className={clsx(styles.input, 'margin-right--sm')} value={nodeName} placeholder={ node_name }/>
             </p>
             <p>
-                <label>
-                    <strong className="margin-right--sm">
-                        Node role :
-                    </strong>
-                </label>
-                <select onChange={onChange_NodeRole} className={clsx(styles.input, 'margin-right--sm')}>
-                    <option value="A">Access</option>
-                    <option value="B">Backbone</option>
-                    <option value="C" selected>Core</option>
-                    <option value="D">Datacenter</option>
-                    <option value="E">Edge</option>
-                </select>
-
-                <label>
-                    <strong className="margin-right--sm">
-                        Node site :
-                    </strong>
-                </label>
-                <input type="text" onChange={onChange_NodeSite} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_site } size="2"/>
-
-                <label>
-                    <strong className="margin-right--sm">
-                        Node ID :
-                    </strong>
-                </label>
-                <input type="text" onChange={onChange_NodeId} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_id } size="2"/>
+                <button onClick={onClick_AddInterface} className={clsx(styles.button, 'margin-right--sm')}>Add interface</button><br/><br/>
+                {interfaces.map(i =>
+                    <div>
+                        <h4>Configuration de l'interface { i.id }</h4>
+                        <p style={{marginLeft: 2 + 'em'}}>
+                            <label>
+                                <strong className="margin-right--sm">
+                                    Slot :
+                                </strong>
+                            </label>
+                            <select onChange={onChange_InterfaceSlot} className={clsx(styles.input, 'margin-right--sm')} data-interface={i.id}>
+                                {range(1,8).map(r =>
+                                    <option value={r}>{r}</option>
+                                )}
+                            </select>{' '}
+                            <label>
+                                <strong className="margin-right--sm">
+                                    Port :
+                                </strong>
+                            </label>
+                            <select onChange={onChange_InterfacePort} className={clsx(styles.input, 'margin-right--sm')} data-interface={i.id}>
+                                {range(1,128).map(r =>
+                                    <option value={r}>{r}</option>
+                                )}
+                            </select>{' '}
+                            <label>
+                                <strong className="margin-right--sm">
+                                    Name :
+                                </strong>
+                            </label>
+                            <input type="text" onChange={onChange_InterfaceName} className={clsx(styles.input, 'margin-right--sm')} data-interface={i.id} placeholder={"name"} />
+                        </p>
+                        <p style={{textAlign: 'right'}}>
+                            <button onClick={onClick_DeleteInterface} data-interface={i.id}>Delete</button>
+                        </p>
+                        <hr/>
+                    </div>
+                )}
             </p>
-            <p>
-                <label>
-                    <strong className="margin-right--sm">
-                        Manual area :
-                    </strong>
-                </label>
-                <input type="text" onChange={onChange_NodeArea} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_area } size="7"/>
 
-                <label>
-                    <strong className="margin-right--sm">
-                        SPBm instance :
-                    </strong>
-                </label>
-                <input type="number" onChange={onChange_NodeSPBm} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_spbm } size="2"/>
-            </p>
-            <p>
-                <label>
-                    <strong className="margin-right--sm">
-                        Primary BVLAN :
-                    </strong>
-                </label>
-                <input type="number" onChange={onChange_NodeSPBmPrimary} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_spbm_primary } size="4"/>
-
-                <label>
-                    <strong className="margin-right--sm">
-                        Primary BVLAN Name :
-                    </strong>
-                </label>
-                <input type="text" onChange={onChange_NodeSPBmPrimary_Name} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_spbm_primary_name } size="16"/>
-            </p>
-            <p>
-                <label>
-                    <strong className="margin-right--sm">
-                        Secondary BVLAN :
-                    </strong>
-                </label>
-                <input type="number" onChange={onChange_NodeSPBmSecondary} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_spbm_secondary } size="4"/>
-
-                <label>
-                    <strong className="margin-right--sm">
-                        Secondary BVLAN Name :
-                    </strong>
-                </label>
-                <input type="text" onChange={onChange_NodeSPBmSecondary_Name} className={clsx(styles.input, 'margin-right--sm')} placeholder={ node_spbm_secondary_name } size="16"/>
-            </p>
-            <p><button onClick={updateConfig}>Generate configuration</button></p>
-
-            <CodeBlock language="jsx" title="Configuration">
-                Please generate config
+            <CodeBlock language="bash" title="Configuration">
+                # Node type    : {nodeType}{"\n"}
+                # Node version : {nodeVersion}{"\n"}
+                {"\n"}
+                enable{"\n"}
+                config terminal{"\n"}
+                {"\n"}
+                sys name {nodeName}{"\n"}
+                {"\n"}
+                spbm{"\n"}
+                router isis{"\n"}
+                system-id 020X.0YY0.00ZZ{"\n"}
+                manual-area 49.0001{"\n"}
+                spbm 1{"\n"}
+                spbm 1 nick-name X.YY.ZZ{"\n"}
+                spbm 1 b-vid 4051,4052 primary 4051{"\n"}
+                exit{"\n"}
+                {"\n"}
+                vlan create 4051 name BVLAN-4051 type spbm-bvlan{"\n"}
+                vlan create 4052 name BVLAN-4052 type spbm-bvlan{"\n"}
+                {"\n"}
+                router isis enable{"\n"}
+                {"\n"}
+                {getInterfaceConfig()}
             </CodeBlock>
         </div>
     )
