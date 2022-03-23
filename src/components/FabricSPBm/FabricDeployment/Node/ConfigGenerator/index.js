@@ -3,45 +3,243 @@ import clsx from 'clsx';
 import styles from './styles.module.css';
 import CodeBlock from '@theme/CodeBlock';
 
-var node_type                   = "physical";
-var node_version                = 8.5;
-var node_name                   = "VSPXXX";
-
-var node_role                   = "C";
-var node_site                   = "00";
-var node_id                     = "01";
-
-var node_area                   = "49.0000";
-var node_spbm                   = 1;
-var node_spbm_primary           = 4051;
-var node_spbm_primary_name      = "BVLAN-4051";
-var node_spbm_secondary         = 4052;
-var node_spbm_secondary_name    = "BVLAN-4052";
-
 export default function ConfigGenerator() {
-    const [nodeType, setNodeType] = useState(node_type);
-    const [nodeVersion, setNodeVersion] = useState(node_version);
-    const [nodeName, setNodeName] = useState(node_name);
-
     const [nodeInterface, setNodeInterface] = useState(0);
     const [interfaces, setInterfaces] = useState([]);
+
+    const [nodeMgmtInterfaceIp, setNodeMgmtInterfaceIp] = useState();
 
     function range(start, end){
         return Array(end - start + 1).fill().map((_, idx) => start + idx)
     }
+    function maskCalculator(mask){
+        if(mask == 24) return "255.255.255.0"
+        else return "255.255.255.255"
+    }
 
+    // GLOBAL CONFIGURATION
+    const [nodeType, setNodeType] = useState("physical");
+    const [nodeVersion, setNodeVersion] = useState(8.5);
+    const [nodeNote, setNodeNote] = useState(false)
     function onChange_NodeType(event){
         setNodeType(event.target.value)
     }
-
     function onChange_NodeVersion(event){
         setNodeVersion(event.target.value)
     }
+    function onClick_NodeNote(event){
+        setNodeNote(event.target.checked)
+    }
 
+    // BLOCK | BOOT CONFIGURATION
+    const [nodeBootConfigFlagsTFTP, setNodeBootConfigFlagsTFTP] = useState(false)
+    const [nodeBootConfigFlagsSSH, setNodeBootConfigFlagsSSH] = useState(false)
+    function getBootConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeBootConfigFlagsTFTP == true) r = true;
+        if(nodeBootConfigFlagsSSH == true) r = true;
+        if(nodeSPBM == true) r = true;
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# BOOT CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            if(nodeBootConfigFlagsTFTP == true) data = data + "boot config flags tftpd\n"
+            if(nodeBootConfigFlagsSSH == true) data = data + "boot config flags sshd\n"
+            if(nodeSPBM == true) data = data + "boot config flags spbm-config-mode\n"
+            data = data + "\n"
+            if(nodeNote == true){
+                data = data + "#end boot flags\n"
+                data = data + "\n"
+            }
+        }
+        return data;
+    }
+    function onClick_BootConfigFlagsTFTP(event){
+        setNodeBootConfigFlagsTFTP(event.target.checked)
+    }
+    function onClick_BootConfigFlagsSSH(event){
+        setNodeBootConfigFlagsSSH(event.target.checked)
+    }
+
+    // BLOCK | SPBM CONFIGURATION
+    const [nodeSPBM, setNodeSPBM] = useState(false)
+    const [nodeSPBMInstance, setNodeSPBMInstance] = useState(0)
+    const [nodeSPBMInstances, setNodeSPBMInstances] = useState([])
+    function getSPBMConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeSPBM == true) r = true
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# SPBM CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            data = data + "spbm\n"
+            data = data + "spbm ethertype 0x8100\n"
+            data = data + "\n"
+        }
+        return data;
+    }
+    function getISISSPBMConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeSPBM == true) r = true
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# ISIS SPBM CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            data = data + "router isis\n"
+            nodeSPBMInstances.map((i) => {
+                data = data + "spbm "+ (i.id + 1) +" nick-name "+ i.nickname +"\n"
+            })
+            data = data + "exit\n"
+            data = data + "\n"
+        }
+        return data;
+    }
+    function getISISConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeSPBM == true) r = true
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# ISIS CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            data = data + "router isis\n"
+            if(nodeName != "") data = data + "sys-name \""+ nodeName +"\"\n"
+            data = data + "is-type l1\n"
+            data = data + "exit\n"
+            data = data + "\n"
+        }
+        return data;}
+    function onClick_NodeSPBM(event){
+        setNodeSPBM(event.target.checked)
+    }
+    function onClick_AddSPBMInstance(event){
+        setNodeSPBMInstances([...nodeSPBMInstances, {
+            id: nodeSPBMInstance,
+            nickname: ""
+        }])
+        setNodeSPBMInstance(nodeSPBMInstance + 1)
+    }
+    function onChange_NodeSPBMInstanceNickName(event){
+        var i = parseInt(event.target.dataset.instance)
+        const newNodeSPBMInstance = [...nodeSPBMInstances]
+        newNodeSPBMInstance[i] = nodeSPBMInstances[i]
+        newNodeSPBMInstance[i].nickname = event.target.value
+        setNodeSPBMInstances(nodeSPBMInstances)
+    }
+
+    // BLOCK | CLI CONFIGURATION
+    const [nodeName, setNodeName] = useState("VSP-1");
+    function getCLIConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeName != "") r = true
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# CLI CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            if(nodeName != "") data = data + "prompt \""+ nodeName +"\"\n"
+            data = data + "\n"
+        }
+
+        return data;
+    }
     function onChange_NodeName(event){
         setNodeName(event.target.value)
     }
 
+    // BLOCK | SSH CONFIGURATION
+    function getSSHConfiguration(){
+        var data = "";
+        var r = false;
+
+        if(nodeBootConfigFlagsSSH == true) r = true;
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# SSH CONFIGURATION\n"
+                data = data + "#\n"
+            }
+            if(nodeBootConfigFlagsSSH == true) data = data + "ssh\n"
+            data = data + "\n"
+        }
+
+        return data;
+    }
+
+    // BLOCK | PORT CONFIGURATION PHASE 1 & 2
+    const [nodeInterfaceMgmt1IP, setNodeInterfaceMgmt1IP] = useState("")
+    const [nodeInterfaceMgmt1Mask, setNodeInterfaceMgmt1Mask] = useState(24)
+    function getPortConfigurationP1(){
+        var data = "";
+        var r = false;
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# PORT CONFIGURATION - PHASE I\n"
+                data = data + "#\n"
+            }
+            data = data + "\n"
+        }
+
+        return data;
+    }
+    function getPortConfigurationP2(){
+        var data = "";
+        var r = false;
+
+        if(nodeInterfaceMgmt1IP != "") r = true;
+
+        if(r == true){
+            if(nodeNote == true){
+                data = data + "#\n"
+                data = data + "# PORT CONFIGURATION - PHASE II\n"
+                data = data + "#\n"
+            }
+            if(nodeInterfaceMgmt1IP != ""){
+                data = data + "interface mgmtEthernet mgmt\n"
+                data = data + "ip address "+ nodeInterfaceMgmt1IP + " " + maskCalculator(nodeInterfaceMgmt1Mask) + "\n"
+                data = data + "exit\n"
+            }
+            data = data + "\n"
+        }
+
+        return data;
+    }
+    function onChange_NodeInterfaceMgmt1IP(event){
+        setNodeInterfaceMgmt1IP(event.target.value)
+    }
+    function onChange_NodeInterfaceMgmt1Mask(event){
+        setNodeInterfaceMgmt1Mask(event.target.value)
+    }
+
+
+
+    // OLD function
     function getInterfaceConfig(){
         var data = "";
         interfaces.map((i) => {
@@ -98,9 +296,12 @@ export default function ConfigGenerator() {
         setInterfaces(newInterface);
     }
 
+    function onChange_MgmtInterfaceIP(event){
+        setNodeMgmtInterfaceIp(event.target.value)
+    }
+
     return (
         <div>
-            <p>&nbsp;</p>
             <p>
                 <label>
                     <strong className="margin-right--sm">
@@ -151,10 +352,102 @@ export default function ConfigGenerator() {
                 </select>{' '}
                 <label>
                     <strong className="margin-right--sm">
+                        Note :
+                    </strong>
+                </label>
+                <input type="checkbox" onClick={onClick_NodeNote} className={clsx(styles.input, 'margin-right--sm')} checked={nodeNote} />
+            </p>
+            <p>
+                <label>
+                    <strong className="margin-right--sm">
                         Node name :
                     </strong>
                 </label>
-                <input type="text" onChange={onChange_NodeName} className={clsx(styles.input, 'margin-right--sm')} value={nodeName} placeholder={ node_name }/>
+                <input type="text" onChange={onChange_NodeName} className={clsx(styles.input, 'margin-right--sm')} value={nodeName} placeholder={ nodeName }/>{' '}
+            </p>
+            <p>
+                <details>
+                    <summary>Boot configuration</summary>
+                    <p style={{marginLeft: 2 + 'em'}}>
+                        <label>
+                            <strong className="margin-right--sm">
+                                TFTP
+                            </strong>
+                        </label>
+                        <input type="checkbox" onClick={onClick_BootConfigFlagsTFTP} className={clsx(styles.input, 'margin-right--sm')} />{' '}
+                        <label>
+                            <strong className="margin-right--sm">
+                                SSH
+                            </strong>
+                        </label>
+                        <input type="checkbox" onClick={onClick_BootConfigFlagsSSH} className={clsx(styles.input, 'margin-right--sm')} />
+                    </p>
+                </details>
+            </p>
+            <p>
+                <details>
+                    <summary>Fabric SPBm</summary>
+                    <p style={{marginLeft: 2 + 'em', marginTop: 1 + 'em'}}>
+                        <label>
+                            <strong className="margin-right--sm">
+                                SPBm
+                            </strong>
+                        </label>
+                        <input type="checkbox" onClick={onClick_NodeSPBM} className={clsx(styles.input, 'margin-right--sm')} />{' | '}
+                        <button onClick={onClick_AddSPBMInstance} className={clsx(styles.button, 'margin-right--sm')}>Add interface</button>{' '}
+                    </p>
+                    <p style={{marginLeft: 2 + 'em'}}>
+                        <details open>
+                            <summary>ISIS / SPBm Configuration</summary>
+                            <p style={{marginLeft: 2 + 'em'}}>
+                                {nodeSPBMInstances.map(i =>
+                                    <div>
+                                        <details>
+                                            <summary>SPBm { i.id + 1 }</summary>
+                                            <p style={{marginLeft: 2 + 'em'}}>
+                                                <label>
+                                                    <strong className="margin-right--sm">
+                                                        Nick-name :
+                                                    </strong>
+                                                </label>
+                                                <input type="text" onChange={onChange_NodeSPBMInstanceNickName} className={clsx(styles.input, 'margin-right--sm')} data-instance={i.id} placeholder={"nick name"} />
+                                            </p>
+                                        </details>
+                                    </div>
+                                )}
+                            </p>
+                        </details>
+                    </p>
+                </details>
+            </p>
+            <p>
+                <details>
+                    <summary>Management interface</summary>
+                    <p style={{marginLeft: 2 + 'em'}}>
+                        <details>
+                            <summary>MGMT1</summary>
+                            <p style={{marginLeft: 2 + 'em'}}>
+                                <label>
+                                    <strong className="margin-right--sm">
+                                        IP Address :
+                                    </strong>
+                                </label>
+                                <input type="text" onChange={onChange_NodeInterfaceMgmt1IP} className={clsx(styles.input, 'margin-right--sm')} placeholder={"1.1.1.1"} />{' '}
+                                <label>
+                                    <strong className="margin-right--sm">
+                                        Mask :
+                                    </strong>
+                                </label>
+                                <select onChange={onChange_NodeInterfaceMgmt1Mask} className={clsx(styles.input, 'margin-right--sm')}>
+                                    <option>-- mask --</option>
+                                    {range(0,32).map(r =>
+                                        <option value={r}>/{r}</option>
+                                    )}
+                                </select>
+                            </p>
+                        </details>
+                    </p>
+                </details>
             </p>
             <p>
                 <button onClick={onClick_AddInterface} className={clsx(styles.button, 'margin-right--sm')}>Add interface</button><br/><br/>
@@ -204,23 +497,14 @@ export default function ConfigGenerator() {
                 enable{"\n"}
                 config terminal{"\n"}
                 {"\n"}
-                sys name {nodeName}{"\n"}
-                {"\n"}
-                spbm{"\n"}
-                router isis{"\n"}
-                system-id 020X.0YY0.00ZZ{"\n"}
-                manual-area 49.0001{"\n"}
-                spbm 1{"\n"}
-                spbm 1 nick-name X.YY.ZZ{"\n"}
-                spbm 1 b-vid 4051,4052 primary 4051{"\n"}
-                exit{"\n"}
-                {"\n"}
-                vlan create 4051 name BVLAN-4051 type spbm-bvlan{"\n"}
-                vlan create 4052 name BVLAN-4052 type spbm-bvlan{"\n"}
-                {"\n"}
-                router isis enable{"\n"}
-                {"\n"}
-                {getInterfaceConfig()}
+                {getBootConfiguration()}
+                {getSPBMConfiguration()}
+                {getCLIConfiguration()}
+                {getSSHConfiguration()}
+                {getPortConfigurationP1()}
+                {getISISSPBMConfiguration()}
+                {getPortConfigurationP2()}
+                {getISISConfiguration()}
             </CodeBlock>
         </div>
     )
